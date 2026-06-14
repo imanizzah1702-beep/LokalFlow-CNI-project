@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LokalFlow - Intelligent Industrial Waste Exchange</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Maps Extended Component Library -->
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/@googlemaps/extended-component-library/0.6.11/index.min.js"></script>
+    
+    <!-- Modern Google Maps API Bootstrapper -->
+    <script async src="https://maps.googleapis.com/maps/api/js?loading=async&key=AIzaSyCByyUpyQUysWr8Ga8EYgTZA5fsabDMAo4&libraries=maps,marker"></script>
+    
+    <script>
+        // Konfigurasi Tema LokalFlow: "Industrial Green"
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        indGreen: {
+                            50: '#f2f8f4',
+                            100: '#e1efe7',
+                            500: '#2d6a4f', /* Primary Accent */
+                            600: '#2d6a4f',
+                            700: '#1b4332',
+                            800: '#081c15',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+        
+        /* Custom Padding styling matching your CSS requirements for the component overlay */
+        .place-picker-container {
+            padding: 12px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans text-gray-800 flex flex-col min-h-screen overflow-x-hidden">
+
+    <nav class="bg-indGreen-800 text-white sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="showView('home')">
+            <i class="fa-solid fa-recycle text-emerald-400 text-2xl"></i>
+            <span class="text-xl font-bold tracking-wider">LokalFlow</span>
+        </div>
+        <div class="hidden md:flex space-x-6 items-center text-sm font-medium">
+            <button onclick="showView('home')" class="hover:text-emerald-400 transition">Home</button>
+            <button onclick="showView('map-view')" class="hover:text-emerald-400 transition"><i class="fa-solid fa-map-location-dot mr-1"></i> Map Finder</button>
+            <button onclick="showView('dashboard')" class="hover:text-emerald-400 transition">Dashboard</button>
+            <button onclick="showView('login')" class="bg-emerald-600 hover:bg-emerald-700 px-4 py-1.5 rounded transition">Login</button>
+            <button onclick="showView('register')" class="border border-emerald-500 hover:bg-emerald-600 px-4 py-1.5 rounded transition">Register</button>
+        </div>
+        <div class="md:hidden">
+            <button onclick="toggleMobileMenu()" class="text-2xl focus:outline-none"><i class="fa-solid fa-bars"></i></button>
+        </div>
+    </nav>
+
+    <div id="mobile-menu" class="hidden fixed inset-0 bg-indGreen-800 bg-opacity-95 z-40 flex flex-col justify-center items-center space-y-6 text-white text-xl">
+        <button onclick="toggleMobileMenu()" class="absolute top-5 right-5 text-3xl">×</button>
+        <button onclick="showView('home'); toggleMobileMenu()">Home</button>
+        <button onclick="showView('dashboard'); toggleMobileMenu()">Dashboard</button>
+        <button onclick="showView('waste-listing'); toggleMobileMenu()">Waste Marketplace</button>
+        <button onclick="showView('add-waste'); toggleMobileMenu()">Create Listing</button>
+        <button onclick="showView('map-view'); toggleMobileMenu()">Map Finder</button>
+        <button onclick="showView('messaging'); toggleMobileMenu()">Direct Chat</button>
+        <button onclick="showView('transaction'); toggleMobileMenu()">Transactions</button>
+        <button onclick="showView('payment'); toggleMobileMenu()">Subscription</button>
+        <button onclick="showView('reports'); toggleMobileMenu()">Analytics Report</button>
+        <button onclick="showView('profile'); toggleMobileMenu()">Company Profile</button>
+        <button onclick="showView('login'); toggleMobileMenu()">Login</button>
+        <button onclick="showView('register'); toggleMobileMenu()">Register</button>
+    </div>
+
+    <div class="flex-1 flex flex-col md:flex-row">
+        
+        <aside id="sidebar-panel" class="bg-indGreen-700 text-white w-full md:w-64 p-5 space-y-2 hidden md:block flex-shrink-0 relative overflow-hidden">
+            <div class="absolute inset-0 opacity-15 mix-blend-multiply pointer-events-none bg-cover bg-center" style="background-image: url('https://www.vecteezy.com/vector-art/35949783-reduce-reuse-recycle-3r-concept-symbol-with-people-vector-illustration');"></div>
+            
+            <div class="pt-2 pb-4 border-b border-indGreen-600 mb-4 relative z-10">
+                <p class="text-xs uppercase tracking-wider text-emerald-300 font-bold">SME Workspace</p>
+                <div class="flex items-center space-x-2 mt-2">
+                    <div class="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-sm font-bold">SME</div>
+                    <div>
+                        <p class="text-sm font-semibold truncate">EcoFab Industries</p>
+                        <p class="text-xs text-emerald-300">Verified Member</p>
+                    </div>
+                </div>
+            </div>
+            <nav class="space-y-1 relative z-10">
+                <button onclick="showView('dashboard')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded hover:bg-indGreen-600 transition text-left font-medium"><i class="fa-solid fa-chart-pie w-5"></i><span>Dashboard</span></button>
+                <button onclick="showView('waste-listing')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded hover:bg-indGreen-600 transition text-left font-medium"><i class="fa-solid fa-boxes-stacked w-5"></i><span>Waste Marketplace</span></button>
+                <button onclick="showView('add-waste')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded hover:bg-indGreen-600 transition text-left font-medium"><i class="fa-solid fa-plus-circle w-5"></i><span>Create Listing</span></button>
+                <button onclick="showView('map-view')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded hover:bg-indGreen-600 transition text-left font-medium"><i class="fa-solid fa-map-location-dot w-5"></i><span>Geocoding Map</span></button>
+                <button onclick="showView('messaging')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded hover:bg-indGreen-600 transition text-left font-medium"><i class="fa-solid fa-comments w-5"></i><span>Direct Chat</span></button>
+                <button onclick="showView('transaction')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded hover:bg-indGreen-600 transition text-left font-medium"><i class="fa-solid fa-handshake w-5"></i><span>Transactions</span></button>
+                <button onclick="showView('payment')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded hover:bg-indGreen-600 transition text-left font-medium"><i class="fa-solid fa-credit-card w-5"></i><span>Subscription</span></button>
+                <button onclick="showView('reports')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded hover:bg-indGreen-600 transition text-left font-medium"><i class="fa-solid fa-file-contract w-5"></i><span>Analytics Report</span></button>
+                <button onclick="showView('profile')" class="w-full flex items-center space-x-3 px-3 py-2.5 rounded hover:bg-indGreen-600 transition text-left font-medium"><i class="fa-solid fa-sliders w-5"></i><span>Company Profile</span></button>
+            </nav>
+        </aside>
+
+        <main class="flex-1 p-4 md:p-8 overflow-y-auto max-h-[calc(100vh-4rem)]">
+
+            <section id="home" class="view-section active space-y-12">
+                <div class="relative overflow-hidden text-center py-20 px-4 rounded-2xl shadow-lg bg-cover bg-center" style="background-image: linear-gradient(rgba(8, 28, 21, 0.85), rgba(45, 106, 79, 0.85)), url('https://images.unsplash.com/photo-1532996122724-e3c354a0b15b?auto=format&fit=crop&q=80&w=1200');">
+                    <h1 class="text-4xl md:text-5xl font-extrabold mb-4 text-white">Intelligent Industrial Waste Exchange for SMEs</h1>
+                    <p class="text-lg text-emerald-100 max-w-3xl mx-auto mb-8">Optimize your supply chain, discover value in excess materials, and directly connect with local buyers or suppliers to save logistic costs.</p>
+                    <div class="flex flex-wrap justify-center gap-4">
+                        <button onclick="showView('register')" class="bg-emerald-500 hover:bg-emerald-400 text-indGreen-800 font-bold px-8 py-3 rounded-lg shadow transition">Get Started (Free)</button>
+                        <button onclick="showView('waste-listing')" class="bg-transparent border-2 border-white hover:bg-white hover:text-indGreen-800 font-bold px-8 py-3 rounded-lg transition">Browse Live Exchange</button>
+                    </div>
+                </div>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
+                        <div class="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-xl mx-auto mb-4"><i class="fa-solid fa-earth-americas"></i></div>
+                        <h3 class="text-lg font-bold mb-2">Circular Economy</h3>
+                        <p class="text-gray-600 text-sm">Redirect industrial byproducts away from landfills back into functional raw manufacturing materials.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
+                        <div class="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-xl mx-auto mb-4"><i class="fa-solid fa-route"></i></div>
+                        <h3 class="text-lg font-bold mb-2">Geocoding Routing</h3>
+                        <p class="text-gray-600 text-sm">Our automated Maps API matching shows you the nearest available items to compress logistical expenses.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 text-center">
+                        <div class="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-xl mx-auto mb-4"><i class="fa-solid fa-bolt"></i></div>
+                        <h3 class="text-lg font-bold mb-2">Real-Time Dashboards</h3>
+                        <p class="text-gray-600 text-sm">Track your excess bulk waste, update available quantities instantly, and chat without intermediate brokers.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="login" class="view-section max-w-md mx-auto bg-white p-8 rounded-xl shadow-md border border-gray-200 mt-8">
+                <h2 class="text-2xl font-bold text-center mb-6 text-indGreen-800">Sign In to LokalFlow</h2>
+                <form onsubmit="event.preventDefault(); authSuccess();" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Corporate Email</label>
+                        <input type="email" placeholder="name@company.com" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Password</label>
+                        <input type="password" placeholder="••••••••" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-emerald-500 outline-none">
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <label class="flex items-center space-x-1"><input type="checkbox"> <span>Remember Me</span></label>
+                        <a href="#" class="text-emerald-600 hover:underline">Forgot Password?</a>
+                    </div>
+                    <button type="submit" class="w-full bg-indGreen-700 hover:bg-indGreen-600 text-white py-2.5 rounded-lg font-bold transition">Authenticate Secured Login</button>
+                </form>
+                <p class="text-xs text-center text-gray-500 mt-4">Protected via standard HTTPS/SSL session security encryption.</p>
+            </section>
+
+            <section id="register" class="view-section max-w-lg mx-auto bg-white p-8 rounded-xl shadow-md border border-gray-200">
+                <h2 class="text-2xl font-bold text-center mb-2 text-indGreen-800">Create SME Enterprise Account</h2>
+                <p class="text-xs text-center text-gray-500 mb-6">Join a growing network of industrial facilities and recycling businesses.</p>
+                <form onsubmit="event.preventDefault(); authSuccess();" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">Company Registered Name</label>
+                            <input type="text" placeholder="e.g. EcoFab Ltd" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">Business Registration No.</label>
+                            <input type="text" placeholder="e.g. 202601234X" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Select Core Stakeholder Target Role</label>
+                        <select class="w-full px-3 py-2 border rounded-lg text-sm bg-white">
+                            <option>Small-Medium Enterprise (SME) - Waste Producer/Sourcing</option>
+                            <option>Recycling & Upcycling Specialized Vendor</option>
+                            <option>Logistics & Resource Hauler Provider</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Corporate Email Address</label>
+                        <input type="email" placeholder="admin@company.com" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">Password</label>
+                            <input type="password" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">Confirm Password</label>
+                            <input type="password" required class="w-full px-3 py-2 border rounded-lg text-sm">
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg font-bold text-sm transition">Register Corporate Domain</button>
+                </form>
+            </section>
+
+            <section id="dashboard" class="view-section space-y-6">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-indGreen-800">Industrial Facility Dashboard</h2>
+                        <p class="text-sm text-gray-500">Live summary metrics for real-time waste items inventory track logs.</p>
+                    </div>
+                    <button onclick="showView('add-waste')" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center space-x-2 shadow"><i class="fa-solid fa-plus"></i> <span>Create Waste Listing</span></button>
+                </div>
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-4">
+                        <div class="p-3 bg-blue-50 text-blue-600 rounded-lg text-xl"><i class="fa-solid fa-boxes-packing"></i></div>
+                        <div><p class="text-xs font-medium text-gray-400 uppercase">My Listings</p><p class="text-xl font-bold text-gray-800">14 Active</p></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-4">
+                        <div class="p-3 bg-emerald-50 text-emerald-600 rounded-lg text-xl"><i class="fa-solid fa-truck-ramp-box"></i></div>
+                        <div><p class="text-xs font-medium text-gray-400 uppercase">Exchanged</p><p class="text-xl font-bold text-gray-800">4,280 Kg</p></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-4">
+                        <div class="p-3 bg-orange-50 text-orange-600 rounded-lg text-xl"><i class="fa-solid fa-comments"></i></div>
+                        <div><p class="text-xs font-medium text-gray-400 uppercase">Active Offers</p><p class="text-xl font-bold text-gray-800">5 Bids</p></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center space-x-4">
+                        <div class="p-3 bg-purple-50 text-purple-600 rounded-lg text-xl"><i class="fa-solid fa-leaf"></i></div>
+                        <div><p class="text-xs font-medium text-gray-400 uppercase">CO2 Diverted</p><p class="text-xl font-bold text-gray-800">12.4 Tons</p></div>
+                    </div>
+                </div>
+                <div class="grid lg:grid-cols-3 gap-6">
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm lg:col-span-2">
+                        <h3 class="font-bold text-gray-700 mb-4">Current Streamed Offloads Inventory</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-gray-50 text-gray-500 uppercase text-xs">
+                                    <tr>
+                                        <th class="p-3">Waste Category</th>
+                                        <th class="p-3">Quantity Avail.</th>
+                                        <th class="p-3">Location Metric</th>
+                                        <th class="p-3">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <tr>
+                                        <td class="p-3 font-semibold text-gray-700">Scrap Aluminum Sheet Rolls</td>
+                                        <td class="p-3">1,200 Kg</td>
+                                        <td class="p-3 text-gray-500">Batu Pahat (4.2km)</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">Available</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3 font-semibold text-gray-700">Unvulcanized Rubber Offcuts</td>
+                                        <td class="p-3">850 Kg</td>
+                                        <td class="p-3 text-gray-500">Muar (18.1km)</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 text-xs bg-amber-100 text-amber-700 rounded-full">Pending Escrow</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-3 font-semibold text-gray-700">Polyethylene Pellets Mixed</td>
+                                        <td class="p-3">400 Kg</td>
+                                        <td class="p-3 text-gray-500">Ayer Hitam (11.5km)</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">Available</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex flex-col justify-between">
+                        <h3 class="font-bold text-gray-700 mb-2">Material Volume Mix</h3>
+                        <div class="h-40 bg-gray-100 rounded-lg flex items-end justify-around p-4">
+                            <div class="w-8 bg-emerald-600 rounded-t" style="height: 80%"><p class="text-[10px] text-white text-center mt-1">Metals</p></div>
+                            <div class="w-8 bg-teal-500 rounded-t" style="height: 55%"><p class="text-[10px] text-white text-center mt-1">Plastic</p></div>
+                            <div class="w-8 bg-amber-500 rounded-t" style="height: 35%"><p class="text-[10px] text-white text-center mt-1">Rubber</p></div>
+                            <div class="w-8 bg-blue-500 rounded-t" style="height: 20%"><p class="text-[10px] text-white text-center mt-1">Wood</p></div>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-2 text-center">Auto-calculated using live inventory parameters.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="waste-listing" class="view-section space-y-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-indGreen-800">Industrial Exchange Centralized Hub</h2>
+                    <p class="text-sm text-gray-500">Filter through raw structural excess materials listed live by regional verified SMEs.</p>
+                </div>
+                <div class="bg-white p-4 rounded-xl border border-gray-200 flex flex-wrap gap-4 items-center">
+                    <input type="text" placeholder="Search item type e.g. Polymer, Copper..." class="flex-1 px-4 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-emerald-500">
+                    <select class="px-4 py-2 border rounded-lg text-sm bg-white"><option>All Material Categories</option><option>Metals</option><option>Plastics / Polymers</option><option>Organic / Biomass</option></select>
+                    <button class="bg-indGreen-700 hover:bg-indGreen-600 text-white px-5 py-2 rounded-lg text-sm font-medium"><i class="fa-solid fa-sliders mr-1"></i> Apply Filter</button>
+                </div>
+                <div id="listings-container" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col justify-between">
+                        <img class="w-full h-44 object-cover" src="plastics.jpg" alt="HDPE Scraps">
+                        <div class="p-5 space-y-3">
+                            <div class="flex justify-between items-start">
+                                <span class="bg-teal-100 text-teal-800 text-xs px-2.5 py-1 rounded-full font-bold">Plastics</span>
+                                <span class="text-xs text-gray-400"><i class="fa-solid fa-clock mr-1"></i>Listed 2h ago</span>
+                            </div>
+                            <h4 class="font-bold text-lg text-gray-800">Industrial HDPE Regrind Scraps</h4>
+                            <p class="text-xs text-gray-500 line-clamp-2">High density polyethylene scrap flakes left over from injection molding runs. Clean, unmixed, ready for pelletizing.</p>
+                            <div class="border-t border-b border-gray-100 py-2 my-2 grid grid-cols-2 gap-2 text-xs">
+                                <div><p class="text-gray-400">Available Mass:</p><p class="font-bold text-gray-700">2,500 Kilograms</p></div>
+                                <div><p class="text-gray-400">Location Area:</p><p class="font-bold text-gray-700"><i class="fa-solid fa-location-dot text-red-500 mr-0.5"></i> Johor Bahru</p></div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 px-5 py-3 flex justify-between items-center border-t">
+                            <span class="text-emerald-700 font-bold text-sm">Negotiable Pricing</span>
+                            <button onclick="showView('messaging')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded font-bold transition">Inquire Direct</button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col justify-between">
+                        <img class="w-full h-44 object-cover" src="biomass.jpg" alt="Wood Shavings">
+                        <div class="p-5 space-y-3">
+                            <div class="flex justify-between items-start">
+                                <span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold">Biomass</span>
+                                <span class="text-xs text-gray-400"><i class="fa-solid fa-clock mr-1"></i>Listed 1d ago</span>
+                            </div>
+                            <h4 class="font-bold text-lg text-gray-800">Untreated Sawdust & Shavings</h4>
+                            <p class="text-xs text-gray-500 line-clamp-2">Compressed dry timber workshop scrap fragments. Highly suitable for structural biomass furnace heating pellets manufacturing.</p>
+                            <div class="border-t border-b border-gray-100 py-2 my-2 grid grid-cols-2 gap-2 text-xs">
+                                <div><p class="text-gray-400">Available Mass:</p><p class="font-bold text-gray-700">5,000 Kilograms</p></div>
+                                <div><p class="text-gray-400">Location Area:</p><p class="font-bold text-gray-700"><i class="fa-solid fa-location-dot text-red-500 mr-0.5"></i> Parit Raja</p></div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 px-5 py-3 flex justify-between items-center border-t">
+                            <span class="text-emerald-700 font-bold text-sm">Free Pick-up Deal</span>
+                            <button onclick="showView('messaging')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded font-bold transition">Inquire Direct</button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col justify-between">
+                        <img class="w-full h-44 object-cover" src="glass.jpg" alt="Glass Cullet">
+                        <div class="p-5 space-y-3">
+                            <div class="flex justify-between items-start">
+                                <span class="bg-cyan-100 text-cyan-800 text-xs px-2.5 py-1 rounded-full font-bold">Glass</span>
+                                <span class="text-xs text-gray-400"><i class="fa-solid fa-clock mr-1"></i>Listed 4h ago</span>
+                            </div>
+                            <h4 class="font-bold text-lg text-gray-800">Crushed Clear Glass Cullets</h4>
+                            <p class="text-xs text-gray-500 line-clamp-2">Sorted and crushed flint glass cullets from bottling production. Free from metallic contaminants and ceramic fragments, washed and dried.</p>
+                            <div class="border-t border-b border-gray-100 py-2 my-2 grid grid-cols-2 gap-2 text-xs">
+                                <div><p class="text-gray-400">Available Mass:</p><p class="font-bold text-gray-700">4,200 Kilograms</p></div>
+                                <div><p class="text-gray-400">Location Area:</p><p class="font-bold text-gray-700"><i class="fa-solid fa-location-dot text-red-500 mr-0.5"></i> Shah Alam</p></div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 px-5 py-3 flex justify-between items-center border-t">
+                            <span class="text-emerald-700 font-bold text-sm">Negotiable Pricing</span>
+                            <button onclick="showView('messaging')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded font-bold transition">Inquire Direct</button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col justify-between">
+                        <img class="w-full h-44 object-cover" src="cardboard.jpg" alt="Baled Cardboard">
+                        <div class="p-5 space-y-3">
+                            <div class="flex justify-between items-start">
+                                <span class="bg-amber-100 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold">Paper</span>
+                                <span class="text-xs text-gray-400"><i class="fa-solid fa-clock mr-1"></i>Listed 1d ago</span>
+                            </div>
+                            <h4 class="font-bold text-lg text-gray-800">Baled OCC Cardboard Scraps</h4>
+                            <p class="text-xs text-gray-500 line-clamp-2">High-quality old corrugated containers (OCC) compressed into tight export bales. Stored indoors, low moisture content, minimum debris.</p>
+                            <div class="border-t border-b border-gray-100 py-2 my-2 grid grid-cols-2 gap-2 text-xs">
+                                <div><p class="text-gray-400">Available Mass:</p><p class="font-bold text-gray-700">8,500 Kilograms</p></div>
+                                <div><p class="text-gray-400">Location Area:</p><p class="font-bold text-gray-700"><i class="fa-solid fa-location-dot text-red-500 mr-0.5"></i> Penang</p></div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 px-5 py-3 flex justify-between items-center border-t">
+                            <span class="text-emerald-700 font-bold text-sm">Negotiable Pricing</span>
+                            <button onclick="showView('messaging')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded font-bold transition">Inquire Direct</button>
+                        </div>
+                    </div>
+                                         <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col justify-between">
+                        <img class="w-full h-44 object-cover" src="polymer.jpg" alt="Polymer Resin Pellets">
+                        <div class="p-5 space-y-3">
+                            <div class="flex justify-between items-start">
+                                <span class="bg-indigo-100 text-indigo-800 text-xs px-2.5 py-1 rounded-full font-bold">Polymer</span>
+                                <span class="text-xs text-gray-400"><i class="fa-solid fa-clock mr-1"></i>Listed 5h ago</span>
+                            </div>
+                            <h4 class="font-bold text-lg text-gray-800">Virgin Grade Polypropylene (PP) Pellets</h4>
+                            <p class="text-xs text-gray-500 line-clamp-2">High-purity thermoplastic polymer granules suitable for high-speed extrusion and injection molding. Excellent thermal resistance and tensile strength.</p>
+                            <div class="border-t border-b border-gray-100 py-2 my-2 grid grid-cols-2 gap-2 text-xs">
+                                <div><p class="text-gray-400">Available Mass:</p><p class="font-bold text-gray-700">5,000 Kilograms</p></div>
+                                <div><p class="text-gray-400">Location Area:</p><p class="font-bold text-gray-700"><i class="fa-solid fa-location-dot text-red-500 mr-0.5"></i> Pasir Gudang</p></div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 px-5 py-3 flex justify-between items-center border-t">
+                            <span class="text-emerald-700 font-bold text-sm">Negotiable Pricing</span>
+                            <button onclick="showView('messaging')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded font-bold transition">Inquire Direct</button>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden flex flex-col justify-between">
+                        <img class="w-full h-44 object-cover" src="aluminium.jpg" alt="Aluminium Scrap">
+                        <div class="p-5 space-y-3">
+                            <div class="flex justify-between items-start">
+                                <span class="bg-slate-100 text-slate-800 text-xs px-2.5 py-1 rounded-full font-bold">Aluminium</span>
+                                <span class="text-xs text-gray-400"><i class="fa-solid fa-clock mr-1"></i>Listed 1h ago</span>
+                            </div>
+                            <h4 class="font-bold text-lg text-gray-800">6063 Aluminium Extrusion Scraps</h4>
+                            <p class="text-xs text-gray-500 line-clamp-2">Clean, unalloyed 6063 aluminium profile cuttings. Free from iron, plastics, and rubber attachments. Ideal for direct remelting.</p>
+                            <div class="border-t border-b border-gray-100 py-2 my-2 grid grid-cols-2 gap-2 text-xs">
+                                <div><p class="text-gray-400">Available Mass:</p><p class="font-bold text-gray-700">3,800 Kilograms</p></div>
+                                <div><p class="text-gray-400">Location Area:</p><p class="font-bold text-gray-700"><i class="fa-solid fa-location-dot text-red-500 mr-0.5"></i> Klang</p></div>
+                            </div>
+                        </div>
+                        <div class="bg-gray-50 px-5 py-3 flex justify-between items-center border-t">
+                            <span class="text-emerald-700 font-bold text-sm">Negotiable Pricing</span>
+                            <button onclick="showView('messaging')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1.5 rounded font-bold transition">Inquire Direct</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="add-waste" class="view-section max-w-2xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-md border border-gray-200">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-indGreen-800">Publish New Excess Material Listing</h2>
+                    <p class="text-xs text-gray-500">Provide high-fidelity metrics to feed matching lookup systems automatically.</p>
+                </div>
+                <form id="new-listing-form" onsubmit="handleNewListing(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Material Name Header</label>
+                        <input type="text" id="form-title" placeholder="e.g. Clean Scrap Copper Slag wires" required class="w-full px-4 py-2 border rounded-lg text-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">Broad Category classification</label>
+                            <select id="form-category" class="w-full px-4 py-2 border rounded-lg text-sm bg-white">
+                                <option>Metals</option>
+                                <option>Plastics</option>
+                                <option>Biomass / Wood</option>
+                                <option>Chemical Resins</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">Total Available Inventory Volume (Kg)</label>
+                            <input type="number" id="form-qty" placeholder="e.g. 1800" required class="w-full px-4 py-2 border rounded-lg text-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Logistics Factory Pickup Location</label>
+                        <input type="text" id="form-location" placeholder="e.g. Kawasan Perindustrian Parit Raja, Johor" class="w-full px-4 py-2 border rounded-lg text-sm">
+                        <p class="text-[11px] text-emerald-600 mt-1"><i class="fa-solid fa-circle-check"></i> Integrated Geocoding Maps API will parse coordinates automatically to map nodes.</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">Material Description & Reuse Condition Details</label>
+                        <textarea rows="3" id="form-desc" placeholder="Specify purity rates, packaging, pallet load constraints..." class="w-full px-4 py-2 border rounded-lg text-sm"></textarea>
+                    </div>
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-lg text-sm shadow transition">Commit Live Market Stream Broadcast</button>
+                </form>
+            </section>
+
+            <!-- GEOMAP ENGINE COMPONENT SECTION -->
+            <section id="map-view" class="view-section space-y-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-indGreen-800">Geocoding Map Finder</h2>
+                    <p class="text-sm text-gray-500">Search locations and display them directly on Google Maps.</p>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="space-y-3">
+                        <div onclick="focusToLocation(1.8543, 103.0869, 'Aluminium Sheet Rolls at Apex Manufacturing')" class="p-3 bg-indGreen-50 rounded-lg border border-indGreen-100 cursor-pointer hover:bg-indGreen-100/50 transition-colors">
+                            <p class="font-bold text-sm text-gray-800">Scrap Aluminum Sheet Rolls</p>
+                            <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-industry mr-1"></i>Apex Manufacturing</p>
+                            <p class="text-[11px] text-emerald-700 font-semibold mt-1"><i class="fa-solid fa-location-dot mr-1"></i>Batu Pahat Node</p>
+                        </div>
+                        
+                        <div onclick="focusToLocation(1.8598, 103.1194, 'Industrial HDPE Regrind at EcoFab Depot')" class="p-3 bg-white rounded-lg border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors">
+                            <p class="font-bold text-sm text-gray-800">Industrial HDPE Regrind</p>
+                            <p class="text-xs text-gray-500 mt-1"><i class="fa-solid fa-industry mr-1"></i>EcoFab Depot</p>
+                            <p class="text-[11px] text-emerald-700 font-semibold mt-1"><i class="fa-solid fa-location-dot mr-1"></i>Parit Raja Cluster</p>
+                        </div>
+                    </div>
+                    
+                    <div class="lg:col-span-2 rounded-xl border overflow-hidden shadow-sm relative h-[550px] bg-slate-100">
+                        <gmp-map center="1.8596,103.1197" zoom="13" map-id="DEMO_MAP_ID" style="width:100%; height:100%;">
+                            <div slot="control-block-start-inline-start" class="place-picker-container bg-white m-3 rounded shadow-md">
+                                <gmpx-place-picker placeholder="Enter an address"></gmpx-place-picker>
+                            </div>
+                            <gmp-advanced-marker id="dynamic-marker" position="1.8596,103.1197" title="Ottumwa, IA"></gmp-advanced-marker>
+                        </gmp-map>
+                    </div>
+                </div>
+            </section>
+
+            <section id="messaging" class="view-section space-y-4">
+                <h2 class="text-2xl font-bold text-indGreen-800">Direct B2B Communication</h2>
+                <div class="grid md:grid-cols-3 bg-white border rounded-xl overflow-hidden h-[500px]">
+                    <div class="border-r overflow-y-auto divide-y divide-gray-100">
+                        <div class="p-4 bg-gray-50 cursor-pointer font-bold text-sm flex items-center space-x-2">
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span>Apex Manufacturing Ltd</span>
+                        </div>
+                        <div class="p-4 hover:bg-gray-50 cursor-pointer text-sm text-gray-600">Muar Woodworking Co.</div>
+                    </div>
+                    <div class="md:col-span-2 flex flex-col justify-between h-full bg-slate-50">
+                        <div class="p-4 bg-white border-b font-bold text-sm">Chat: Negotiation on Aluminum Sheets</div>
+                        <div class="flex-1 p-4 overflow-y-auto space-y-3 text-xs sm:text-sm">
+                            <div class="bg-white p-3 rounded-lg border max-w-xs">Is the 1,200 Kg volume available for pickup next Monday morning?</div>
+                            <div class="bg-emerald-600 text-white p-3 rounded-lg max-w-xs ml-auto">Yes, it is entirely palletized and ready for logistics dispatch at our compound.</div>
+                        </div>
+                        <div class="p-3 bg-white border-t flex space-x-2">
+                            <input type="text" placeholder="Type direct collection terms..." class="flex-1 px-4 py-2 border rounded-lg text-sm outline-none">
+                            <button class="bg-indGreen-600 text-white px-4 py-2 rounded-lg text-sm font-bold">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="transaction" class="view-section space-y-4">
+                <h2 class="text-2xl font-bold text-indGreen-800">Immutable Exchange Ledger</h2>
+                <div class="bg-white border rounded-xl overflow-hidden">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 border-b font-bold text-gray-500">
+                            <tr><th class="p-4">Transaction ID</th><th class="p-4">Material Batch</th><th class="p-4">Partner Entity</th><th class="p-4">Status</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <tr><td class="p-4 font-mono text-xs">LF-TX-2026-092</td><td class="p-4">Aluminum Sheets (1,200 Kg)</td><td class="p-4">Apex Manufacturing</td><td class="p-4"><span class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded-full font-bold">Collected</span></td></tr>
+                            <tr><td class="p-4 font-mono text-xs">LF-TX-2026-114</td><td class="p-4">Sawdust Pulp (5,000 Kg)</td><td class="p-4">Batu Pahat Woodworking</td><td class="p-4"><span class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded-full font-bold">In Transit</span></td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="payment" class="view-section max-w-md mx-auto bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                <h2 class="text-xl font-bold text-indGreen-800 mb-2">Monetization & Tiers Validation</h2>
+                <p class="text-xs text-gray-500 mb-6">Test premium industrial listing features using Stripe Sandbox.</p>
+                <div class="bg-slate-50 p-4 rounded-lg border mb-4">
+                    <p class="font-bold text-sm text-gray-700">Premium Membership Tier</p>
+                    <p class="text-2xl font-extrabold text-indGreen-600 mt-1">RM 150 <span class="text-xs text-gray-400 font-normal">/ month</span></p>
+                </div>
+                <form onsubmit="event.preventDefault(); alert('Stripe Sandbox Validation Success!');" class="space-y-3">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-gray-500">Card Number</label>
+                        <input type="text" placeholder="4242 4242 4242 4242" required class="w-full px-3 py-2 border rounded-lg text-sm font-mono outline-none focus:ring-1 focus:ring-emerald-500">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="text" placeholder="MM/YY" required class="w-full px-3 py-2 border rounded-lg text-sm font-mono text-center">
+                        <input type="text" placeholder="CVC" required class="w-full px-3 py-2 border rounded-lg text-sm font-mono text-center">
+                    </div>
+                    <button class="w-full bg-emerald-600 text-white font-bold py-2 rounded-lg text-sm mt-2">Validate Mock Transaction</button>
+                </form>
+            </section>
+
+            <section id="reports" class="view-section space-y-6">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-4">
+                    <div>
+                        <h2 class="text-2xl font-bold text-indGreen-800">Environmental Compliance & Analysis Report</h2>
+                        <p class="text-sm text-gray-500">Automated structural ecosystem evaluation logs for university project validation audits.</p>
+                    </div>
+                    <button onclick="window.print()" class="text-xs bg-indGreen-600 hover:bg-indGreen-700 text-white font-medium px-4 py-2 rounded-lg shadow-sm transition-colors flex items-center gap-1.5 self-stretch sm:self-auto justify-center">
+                        <i class="fa-solid fa-print"></i> Print Executive Summary
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm text-center">
+                        <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Circular Materials Diverted</p>
+                        <p class="text-2xl font-extrabold text-indGreen-600 mt-1">4.65 Tonnes</p>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm text-center">
+                        <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Logistical Footprint Savings</p>
+                        <p class="text-2xl font-extrabold text-blue-600 mt-1">RM 1,240.00</p>
+                    </div>
+                    <div class="bg-white rounded-xl border border-gray-200 p-5 shadow-sm text-center">
+                        <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Active Resource Utilization</p>
+                        <p class="text-2xl font-extrabold text-amber-600 mt-1">87.4 %</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 sm:p-8 space-y-8">
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                            <span class="w-2 h-4 bg-indGreen-50 rounded-sm inline-block"></span> Item 1.0: Introduction & Background
+                        </h3>
+                        <div class="text-sm text-gray-600 space-y-3 leading-relaxed">
+                            <p>
+                                <strong>LokalFlow</strong> serves as an intelligent industrial waste exchange ecosystem designed specifically to optimize material distribution and logistics for Small-Medium Enterprises (SMEs). By deploying a geocoding map engine paired with instant digital tracking, the architecture bridges raw material waste producers directly with local upcycling facilities.
+                            </p>
+                            <div class="p-4 bg-gray-50 border-l-4 border-red-500 rounded-r-lg space-y-2 mt-2">
+                                <p class="text-xs font-bold text-red-800 uppercase tracking-wider"><i class="fa-solid fa-triangle-exclamation"></i> Identified SME Resource Bottlenecks:</p>
+                                <ul class="text-xs text-gray-600 space-y-1 list-disc pl-4">
+                                    <li><strong>Absence of Centralized Exchanges:</strong> No unified directory coordinates excess raw byproducts between localized facilities.</li>
+                                    <li><strong>Severe Logistics Cost Constraints:</strong> Transportation loads escalate heavily due to lack of proximity visibility parameters.</li>
+                                    <li><strong>Premature Landfill Disposals:</strong> High-value manufacturing residuals are systematically discarded due to an absence of immediate secondary markets.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                            <span class="w-2 h-4 bg-indGreen-50 rounded-sm inline-block"></span> Item 2.0: Dynamic Market Analysis
+                        </h3>
+                        <p class="text-sm text-gray-600 mb-4 leading-relaxed">
+                            A breakdown of the active regional clearinghouse registry maps the deployment velocity across raw material sectors monitored within your Supabase/Firestore ecosystem.
+                        </p>
+
+                        <div class="border border-gray-200 rounded-lg overflow-hidden">
+                            <table class="w-full text-left border-collapse text-xs sm:text-sm">
+                                <thead class="bg-gray-50 text-gray-500 uppercase text-[10px] tracking-wider font-semibold border-b border-gray-200">
+                                    <tr>
+                                        <th class="py-2.5 px-4">Material Segment</th>
+                                        <th class="py-2.5 px-4">Volume Traded</th>
+                                        <th class="py-2.5 px-4">Proximity Optimization Avg.</th>
+                                        <th class="py-2.5 px-4 text-right">Ecosystem Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 text-gray-700">
+                                    <tr>
+                                        <td class="py-3 px-4 font-medium text-gray-900">Metals (Aluminum Offcuts)</td>
+                                        <td class="py-3 px-4">1,200 kg</td>
+                                        <td class="py-3 px-4">4.2 km Radius</td>
+                                        <td class="py-3 px-4 text-right"><span class="bg-green-100 text-green-800 font-semibold px-2 py-0.5 rounded text-[10px]">High Velocity</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 px-4 font-medium text-gray-900">Plastics & Polymers</td>
+                                        <td class="py-3 px-4">3,000 kg</td>
+                                        <td class="py-3 px-4">18.1 km Radius</td>
+                                        <td class="py-3 px-4 text-right"><span class="bg-green-100 text-green-800 font-semibold px-2 py-0.5 rounded text-[10px]">High Velocity</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td class="py-3 px-4 font-medium text-gray-900">Wood & Timber Offcuts</td>
+                                        <td class="py-3 px-4">450 kg</td>
+                                        <td class="py-3 px-4">12.8 km Radius</td>
+                                        <td class="py-3 px-4 text-right"><span class="bg-amber-100 text-amber-800 font-semibold px-2 py-0.5 rounded text-[10px]">Moderate</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                            <span class="w-2 h-4 bg-indGreen-50 rounded-sm inline-block"></span> Item 3.0: Analysis & Discussion (Multimedia Node)
+                        </h3>
+                        <p class="text-sm text-gray-600 mb-4 leading-relaxed">
+                            Real-time transaction histories and automated inventory adjustments generate live tracking metrics across the secondary raw material lifecycle.
+                        </p>
+                        
+                        <!-- PICTURE 6: MULTIMEDIA CHART GRAPH BACKGROUND PREVIEW -->
+                        <div class="p-12 bg-slate-900 rounded-xl text-center text-white relative overflow-hidden bg-cover bg-center" style="background-image: linear-gradient(rgba(15, 23, 42, 0.9), rgba(15, 23, 42, 0.95)), url('https://www.mdpi.com/sustainability/sustainability-18-05526/article_deploy/html/images/sustainability-18-05526-g004.png');">
+                            <i class="fa-solid fa-chart-pie text-4xl text-green-400 mb-2 relative z-10"></i>
+                            <h4 class="text-sm font-bold text-gray-100 relative z-10">Dynamic Sustainability Allocation Metrics Array</h4>
+                            <p class="text-[11px] text-gray-400 max-w-md mx-auto mt-1 relative z-10">Interactive dashboard preview display for supply chain allocation structures, carbon mitigation metrics, and structural logistics metrics.</p>
+                        </div>
+                    </div>
+
+                    <div class="border-t border-gray-100 pt-6 flex flex-col sm:flex-row items-center justify-between text-xs text-gray-400 gap-4">
+                        <div>
+                            <p class="mt-0.5">Clearinghouse tracking model version: 1.0.4-LokalFlow-2026</p>
+                        </div>
+                        <div class="text-right">
+                            <p>Institution: FSKTM, UTHM</p>
+                            <p class="mt-0.5">Course Code Reference: BIC31502</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="profile" class="view-section space-y-6">
+                <div class="bg-white rounded-xl border border-gray-200 p-6 shadow-sm flex flex-col sm:flex-row items-center gap-4">
+                    <div class="w-16 h-16 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center text-2xl font-bold flex-shrink-0">
+                        EF
+                    </div>
+                    <div class="text-center sm:text-left flex-1">
+                        <h2 class="text-lg font-bold text-gray-900">EcoFactory Sdn Bhd</h2>
+                        <p class="text-xs text-gray-500 mt-0.5"><i class="fa-solid fa-industry"></i> Small-Medium Enterprise (SME) Sector</p>
+                        <p class="text-xs text-emerald-600 font-semibold mt-1 flex items-center justify-center sm:justify-start gap-1">
+                            <i class="fa-solid fa-circle text-[8px] animate-pulse"></i> Verified Clearinghouse Participant
+                        </p>
+                    </div>
+                    <div class="text-right w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0">
+                        <span class="text-xs bg-amber-100 text-amber-800 font-bold px-3 py-1 rounded-full inline-flex items-center gap-1">
+                            <i class="fa-solid fa-star"></i> Premium Tier
+                        </span>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                    <form id="profileSettingsForm" onsubmit="event.preventDefault(); alert('Success! Enterprise profile adjustments committed to the cloud database cluster safely.');" class="divide-y divide-gray-100">
+                        
+                        <div class="p-6 space-y-4">
+                            <h3 class="font-semibold text-gray-800 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-address-card text-emerald-600"></i> Operational Credentials
+                            </h3>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Corporate Registration (SSM)</label>
+                                    <input type="text" value="202401039482" disabled
+                                        class="w-full px-3.5 py-2 text-sm border border-gray-200 bg-gray-50 text-gray-500 rounded-lg outline-none cursor-not-allowed font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Primary Contact Email</label>
+                                    <input type="email" value="operations@ecofactory.com.my" required
+                                        class="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Contact Hotline</label>
+                                    <input type="text" value="+60 7-453 7000" required
+                                        class="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Primary Waste Material Category</label>
+                                    <select class="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 transition-all bg-white text-gray-700">
+                                        <option value="metals" selected>Metals (Steel, Aluminum, Copper)</option>
+                                        <option value="plastics">Plastics & Polymers</option>
+                                        <option value="wood">Wood & Timber Offcuts</option>
+                                        <option value="textiles">Industrial Textiles & Fabrics</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-6 space-y-4 bg-gray-50/30">
+                            <h3 class="font-semibold text-gray-800 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-map-location-dot text-emerald-600"></i> Geocoding Dispatch Anchors
+                            </h3>
+                            
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Factory Pickup Hub Address</label>
+                                <textarea rows="2" required
+                                    class="w-full px-3.5 py-2 text-sm border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 transition-all">PLO 45, Kawasan Perindustrian Parit Raja, 86400 Parit Raja, Johor, Malaysia</textarea>
+                            </div>
+
+                            <div class="bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-800 flex items-start gap-2.5">
+                                <i class="fa-solid fa-circle-info text-blue-500 mt-0.5"></i>
+                                <div>
+                                    <p class="font-semibold">Maps Route Optimization Verified</p>
+                                    <p class="text-blue-700/90 mt-0.5">These coordinates are processed directly by the Maps API to guide nearby logistics providers during material collection transactions.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="p-6 space-y-4">
+                            <h3 class="font-semibold text-gray-800 text-sm flex items-center gap-2">
+                                <i class="fa-solid fa-shield-halved text-emerald-600"></i> Platform Security & APIs
+                            </h3>
+                            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg bg-white">
+                                <div class="text-xs space-y-0.5">
+                                    <p class="font-bold text-gray-800">Dynamic Cloud Syncing Integration</p>
+                                    <p class="text-gray-500 text-[11px]">Active state variables are stored securely within environmental variables to prevent hardcoding.</p>
+                                </div>
+                                <span class="text-[10px] bg-green-100 text-green-800 font-bold px-2 py-0.5 rounded">Active Security</span>
+                            </div>
+                        </div>
+
+                        <div class="px-6 py-4 bg-gray-50 flex items-center justify-end gap-3">
+                            <button type="button" onclick="alert('Modifications dropped.')" class="px-4 py-2 border border-gray-300 rounded-lg text-xs font-medium text-gray-700 hover:bg-gray-100 transition-colors">
+                                Reset Form
+                            </button>
+                            <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs rounded-lg shadow-sm transition-colors flex items-center gap-1.5">
+                                <i class="fa-solid fa-floppy-disk"></i> Save Profile Modifications
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Navigation Controller (showView)
+        function showView(viewId) {
+            const sections = document.querySelectorAll('.view-section');
+            sections.forEach(section => {
+                section.classList.remove('active');
+            });
+
+            const targetSection = document.getElementById(viewId);
+            if (targetSection) {
+                targetSection.classList.add('active');
+            }
+
+            const sidebar = document.getElementById('sidebar-panel');
+            if (viewId === 'home' || viewId === 'login' || viewId === 'register') {
+                sidebar.classList.add('hidden');
+            } else {
+                sidebar.classList.remove('hidden');
+            }
+
+            document.querySelector('main').scrollTop = 0;
+        }
+
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        function authSuccess() {
+            alert('Authentication Verified Successfully! Redirecting session parameters to SME Workspace.');
+            showView('dashboard');
+        }
+
+        function handleNewListing(event) {
+            event.preventDefault();
+            const title = document.getElementById('form-title').value;
+            const qty = document.getElementById('form-qty').value;
+
+            alert(`Broadcast Success!\n"${title}" (${qty} Kg) has been published to the cloud pipeline.`);
+            showView('waste-listing');
+        }
+
+        // =========================================================================
+        // GOOGLE MAPS COUPLING LAYER
+        // =========================================================================
+        let globalInfoWindow = null;
+
+        async function initMapExtended() {
+            await customElements.whenDefined('gmp-map');
+
+            const mapComponent = document.querySelector('gmp-map');
+            const markerComponent = document.getElementById('dynamic-marker');
+            const placePicker = document.querySelector('gmpx-place-picker');
+            globalInfoWindow = new google.maps.InfoWindow();
+
+            if(mapComponent && mapComponent.innerMap) {
+                mapComponent.innerMap.setOptions({
+                    mapTypeControl: false
+                });
+            }
+
+            placePicker.addEventListener('gmpx-placechange', () => {
+                const place = placePicker.value;
+
+                if (!place.location) {
+                    window.alert("No details available for input: '" + place.name + "'");
+                    globalInfoWindow.close();
+                    markerComponent.position = null;
+                    return;
+                }
+
+                if (place.viewport) {
+                    mapComponent.innerMap.fitBounds(place.viewport);
+                } else {
+                    mapComponent.center = place.location;
+                    mapComponent.zoom = 17;
+                }
+
+                markerComponent.position = place.location;
+                globalInfoWindow.setContent(`
+                    <div class="p-1 font-sans text-xs">
+                        <strong>${place.displayName}</strong><br>
+                        <span class="text-gray-600">${place.formattedAddress}</span>
+                    </div>
+                `);
+                globalInfoWindow.open(mapComponent.innerMap, markerComponent);
+            });
+        }
+
+        // Sidebar click targeting bridge function
+        function focusToLocation(lat, lng, labelText) {
+            const mapComponent = document.querySelector('gmp-map');
+            const markerComponent = document.getElementById('dynamic-marker');
+            
+            if (!mapComponent || !mapComponent.innerMap || !markerComponent) return;
+            
+            const targetCoords = { lat: lat, lng: lng };
+            mapComponent.innerMap.panTo(targetCoords);
+            mapComponent.innerMap.setZoom(15);
+            
+            markerComponent.position = targetCoords;
+
+            globalInfoWindow.setContent(`
+                <div class="p-2 font-sans text-xs">
+                    <strong>${labelText}</strong><br>
+                    <span class="text-gray-500">Coordinates: ${lat}, ${lng}</span>
+                </div>
+            `);
+            globalInfoWindow.open(mapComponent.innerMap, markerComponent);
+        }
+
+        document.addEventListener('DOMContentLoaded', initMapExtended);
+    </script>
+</body>
+</html>
